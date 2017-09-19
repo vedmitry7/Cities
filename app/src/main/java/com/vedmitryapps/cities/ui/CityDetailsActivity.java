@@ -16,7 +16,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class CityDetails extends AppCompatActivity {
+public class CityDetailsActivity extends AppCompatActivity {
 
     TextView cityName;
     TextView summary;
@@ -31,7 +31,7 @@ public class CityDetails extends AppCompatActivity {
         summary = (TextView) findViewById(R.id.summary);
         wikiUrl = (TextView) findViewById(R.id.wikiUrl);
 
-        String title = getIntent().getStringExtra("cityName");
+        final String title = getIntent().getStringExtra("cityName");
 
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl("http://api.geonames.org/")
@@ -45,7 +45,9 @@ public class CityDetails extends AppCompatActivity {
             @Override
             public void onResponse(Call<GeoList> call, Response<GeoList> response) {
                 if(response.body().getGeonames().size()==0){
+                    cityName.setText(title);
                     summary.setText(R.string.no_information_on_wiki);
+                    return;
                 }
                 Geoname geoname = response.body().getGeonames().get(0);
                 System.out.println("qqqq " + call.toString());
@@ -63,7 +65,7 @@ public class CityDetails extends AppCompatActivity {
 
                 cityName.setText(geoname.getTitle()+"");
                 summary.setText(geoname.getSummary());
-                wikiUrl.setText(geoname.getWikipediaUrl());
+                wikiUrl.setText("https://" + geoname.getWikipediaUrl());
 
             }
 
@@ -77,7 +79,7 @@ public class CityDetails extends AppCompatActivity {
                 System.out.println("qqqq " + t);
 
 
-                Toast.makeText(CityDetails.this, "error2", Toast.LENGTH_SHORT).show();
+                Toast.makeText(CityDetailsActivity.this, "error2", Toast.LENGTH_SHORT).show();
             }
         });
     }

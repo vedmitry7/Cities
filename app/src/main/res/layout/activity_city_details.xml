@@ -6,7 +6,7 @@
     android:padding="@dimen/margin_medium"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.vedmitryapps.cities.ui.CityDetails">
+    tools:context="com.vedmitryapps.cities.ui.CityDetailsActivity">
 
     <TextView
         android:id="@+id/cityName"
@@ -21,6 +21,7 @@
     <TextView
         android:id="@+id/wikiUrl"
         android:textSize="16dp"
+        android:autoLink="web"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 

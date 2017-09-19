@@ -6,6 +6,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public final class ApiFactory {
 
+    private GeonamesService geonamesServiceClient;
 
     public static DownloadCountriesService getDownloadCountriesService(){
         Retrofit.Builder builder = new Retrofit.Builder()
