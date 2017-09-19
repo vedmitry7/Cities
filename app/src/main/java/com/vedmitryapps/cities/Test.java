@@ -1,42 +1,32 @@
 package com.vedmitryapps.cities;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class Test {
     public static void main(String[] args) {
-        String s = null;
-        try {
-            s = read("countriesToCities.json");
-        } catch (FileNotFoundException e) {
-            System.out.println("FileNotFoundException e");
-            e.printStackTrace();
-        }
 
-        System.out.println(s);
-    }
+        List<String> oopLanguages = new ArrayList<>();
+        oopLanguages.add("Java");
+        oopLanguages.add("C++");
+        oopLanguages.add("C#");
+        oopLanguages.add("Python");
+        oopLanguages.add("Scala");
 
-    public static String read(String fileName) throws FileNotFoundException {
-        StringBuilder sb = new StringBuilder();
+        Type itemsArrType = new TypeToken<List<String>>() {}.getType();
 
-        try {
-            BufferedReader in = new BufferedReader(new FileReader( fileName));
-            try {
-                String s;
-                while ((s = in.readLine()) != null) {
-                    sb.append(s);
-                    sb.append("\n");
-                }
-            } finally {
-                in.close();
-            }
-        } catch(IOException e) {
-            throw new RuntimeException(e);
-        }
+        String s = new Gson().toJson(oopLanguages);
 
-        return sb.toString();
+        List<String> list = new Gson().fromJson(s, itemsArrType);
+
+
+
+        System.out.println(list.get(1));
+        System.out.println(list.size());
     }
 }

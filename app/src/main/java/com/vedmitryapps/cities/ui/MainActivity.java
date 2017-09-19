@@ -1,60 +1,87 @@
 package com.vedmitryapps.cities.ui;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ExpandableListView;
 import android.widget.Toast;
 
-import com.vedmitryapps.cities.LoadData;
+import com.vedmitryapps.cities.CountryLoader;
+import com.vedmitryapps.cities.DBHelper;
 import com.vedmitryapps.cities.R;
-import com.vedmitryapps.cities.api.service.CityDetails;
-import com.vedmitryapps.cities.api.service.DownloadCountries;
+import com.vedmitryapps.cities.presenter.MessageView;
 import com.vedmitryapps.cities.ui.adapter.ListAdapter;
+import com.vedmitryapps.cities.ui.dialog.LoadingDialog;
+import com.vedmitryapps.cities.ui.dialog.LoadingView;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+public class MainActivity extends AppCompatActivity implements MessageView {
 
-public class MainActivity extends AppCompatActivity {
-
-    /*private RecyclerView mRecyclerView;
-    private List<String> countries = new ArrayList<>();*/
-
+    private static final String APP_PREFERENCES = "prefs";
     ExpandableListView expListView;
     ListAdapter expListAdapter;
-    List<String> expListTitle;
-    Map<String, List<String>> expListDetail;
+    List<String> expListTitle = new ArrayList<>();
+    Map<String, List<String>> expListDetail = new HashMap<>();
+    LoadingView mLoadingView;
+    public static final int downloadId = 234567;
+
+    SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_better);
+        sharedPreferences = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+        initView();
 
-        /*countries = new ArrayList<>();
-        mRecyclerView = (RecyclerView) findViewById(R.id.posts_recycle_view);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        if(sharedPreferences.getBoolean("downloaded", false)){
+            Log.i("TAG22rt", "downloaded - true");
+            showList();
+        } else {
+            Log.i("TAG22rt", "downloaded - false");
+            mLoadingView.showLoadingIndicator();
+            LoaderCountriesCallbacks callback = new LoaderCountriesCallbacks();
+            getSupportLoaderManager().initLoader(downloadId, Bundle.EMPTY, callback);
+        }
+    }
 
-        mRecyclerView.setLayoutManager(layoutManager);
+    private void showList() {
+        DBHelper dbHelper = new DBHelper(this);
+        expListDetail = dbHelper.getDate();
+        expListTitle = new ArrayList<>(expListDetail.keySet());
+/*        Map<String, List<String>> map = dbHelper.getDate();
+        ArrayList<String> list = new ArrayList<>(map.keySet());*/
+       /* Collections.sort(expListTitle, new Comparator<String>() {
+            @Override
+            public int compare(String s, String t1) {
+                return s.compareTo(t1);
+            }
+        });*/
+   /*     Log.i("TAG22rt", "list size = " + list.size());
+        Log.i("TAG22rt", "map size = " + map.size());*/
 
-        CountriesAdapter adapter = new CountriesAdapter(countries);
-        mRecyclerView.setAdapter(adapter);*/
+   /*     expListDetail = LoadData.loadData();
 
+        expListTitle = new ArrayList<>(expListDetail.keySet());*/
+        showList(expListTitle, expListDetail);
+    }
+
+    private void initView() {
         expListView = (ExpandableListView) findViewById(R.id.expListView);
 
-        expListDetail = LoadData.loadData();
+ /*       expListDetail = LoadData.loadData();
 
-        expListTitle = new ArrayList<>(expListDetail.keySet());
+        expListTitle = new ArrayList<>(expListDetail.keySet());*/
         expListAdapter = new ListAdapter(this, expListTitle, expListDetail);
 
         expListView.setAdapter(expListAdapter);
@@ -78,45 +105,62 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("https://raw.githubusercontent.com/")
-                .addConverterFactory(GsonConverterFactory.create());
+        mLoadingView = LoadingDialog.view(getSupportFragmentManager());
 
-        Retrofit retrofit = builder.build();
+        mLoadingView.showLoadingIndicator();
+    }
 
-        DownloadCountries client = retrofit.create(DownloadCountries.class);
+    private class LoaderCountriesCallbacks implements LoaderManager.LoaderCallbacks<Map<String, List<String>>>{
 
-        client.getData().enqueue(new Callback<Map<String, List<String>>>() {
-            @Override
-            public void onResponse(Call<Map<String, List<String>>> call, Response<Map<String,
-                    List<String>>> response) {
-                Log.i("TAG22", "Response come.");
-                for (String key :response.body().keySet()
-                     ) {
-                    //countries.add(key);
-                    //mRecyclerView.getAdapter().notifyDataSetChanged();
-                }
-                ArrayList<String> list = new ArrayList<>(response.body().keySet());
-                Collections.sort(list, new Comparator<String>() {
-                    @Override
-                    public int compare(String s, String t1) {
-                        return s.compareTo(t1);
-                    }
-                });
-                expListTitle = new ArrayList<>(list);
-                expListDetail = response.body();
-                expListAdapter.update(expListTitle, expListDetail);
+        @Override
+        public Loader<Map<String, List<String>>> onCreateLoader(int id, Bundle args) {
+            Log.i("TAG22rt", "on create Loader");
+
+            if (id == downloadId){
+                return new CountryLoader(getApplicationContext());
             }
+            return null;
+        }
 
-            @Override
-            public void onFailure(Call<Map<String, List<String>>> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "error", Toast.LENGTH_SHORT).show();
+        @Override
+        public void onLoadFinished(Loader<Map<String, List<String>>> loader, Map<String, List<String>> data) {
+            Log.i("TAG22rt", "finish download");
 
+            if(loader.getId() == downloadId){
+                saveToDB(data);
+                sharedPreferences.edit().putBoolean("downloaded", true).commit();
+                showList();
+                mLoadingView.hideLoadingIndicator();
+                Log.i("TAG22rt", "finish");
             }
-        });
+        }
 
+        @Override
+        public void onLoaderReset(Loader<Map<String, List<String>>> loader) {
 
+        }
+    }
 
+    @Override
+    public void showList(List<String> listTitle, Map listCities) {
 
+        expListAdapter.update(listTitle, listCities);
+        mLoadingView.hideLoadingIndicator();
+    }
+
+    @Override
+    public void showError() {
+        Toast.makeText(MainActivity.this, "error", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public Context getContext() {
+        return getApplicationContext();
+    }
+
+    private void saveToDB(Map<String, List<String>> map){
+        DBHelper dbHelper = new DBHelper(this);
+        dbHelper.clearDB();
+        dbHelper.fillDB(map);
     }
 }

@@ -1,4 +1,4 @@
-package com.vedmitryapps.cities.api.model;
+package com.vedmitryapps.cities.model;
 
 
 import com.google.gson.annotations.Expose;

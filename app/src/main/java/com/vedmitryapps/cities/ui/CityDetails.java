@@ -1,4 +1,4 @@
-package com.vedmitryapps.cities.api.service;
+package com.vedmitryapps.cities.ui;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -6,8 +6,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.vedmitryapps.cities.R;
-import com.vedmitryapps.cities.api.model.GeoList;
-import com.vedmitryapps.cities.api.model.Geoname;
+import com.vedmitryapps.cities.api.GeonamesService;
+import com.vedmitryapps.cities.model.GeoList;
+import com.vedmitryapps.cities.model.Geoname;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -17,19 +18,18 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class CityDetails extends AppCompatActivity {
 
-
-   // @BindView(R.id.cityName)
     TextView cityName;
     TextView summary;
+    TextView wikiUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_city_details);
 
-        //ButterKnife.bind(this);
         cityName = (TextView) findViewById(R.id.cityName);
         summary = (TextView) findViewById(R.id.summary);
+        wikiUrl = (TextView) findViewById(R.id.wikiUrl);
 
         String title = getIntent().getStringExtra("cityName");
 
@@ -41,9 +41,12 @@ public class CityDetails extends AppCompatActivity {
 
         GeonamesService client = retrofit.create(GeonamesService.class);
 
-        client.getPalce("vedmitry", title).enqueue(new Callback<GeoList>() {
+        client.getPlace("vedmitry", title).enqueue(new Callback<GeoList>() {
             @Override
             public void onResponse(Call<GeoList> call, Response<GeoList> response) {
+                if(response.body().getGeonames().size()==0){
+                    summary.setText(R.string.no_information_on_wiki);
+                }
                 Geoname geoname = response.body().getGeonames().get(0);
                 System.out.println("qqqq " + call.toString());
                 System.out.println("qqqq " + geoname.getTitle());
@@ -60,6 +63,7 @@ public class CityDetails extends AppCompatActivity {
 
                 cityName.setText(geoname.getTitle()+"");
                 summary.setText(geoname.getSummary());
+                wikiUrl.setText(geoname.getWikipediaUrl());
 
             }
 
