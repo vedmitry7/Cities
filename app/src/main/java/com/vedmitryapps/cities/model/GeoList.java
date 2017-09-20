@@ -20,4 +20,5 @@ public class GeoList {
         this.geonames = geonames;
     }
 
+
 }

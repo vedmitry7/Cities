@@ -42,12 +42,11 @@ public class ListAdapter extends BaseExpandableListAdapter {
     @Override
     public View getChildView(int listPosition, final int expandedListPosition,
                              boolean isLastChild, View convertView, ViewGroup parent) {
-        // получаем дочерний элемент
         String expListText = (String) getChild(listPosition, expandedListPosition);
         if (convertView == null) {
             LayoutInflater mInflater = (LayoutInflater)
                     context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = mInflater.inflate(R.layout.list_item, null);
+            convertView = mInflater.inflate(R.layout.item_city, null);
         }
         TextView expListTextView = (TextView) convertView.findViewById(R.id.expandedListItem);
         expListTextView.setText(expListText);
@@ -79,12 +78,11 @@ public class ListAdapter extends BaseExpandableListAdapter {
     @Override
     public View getGroupView(int listPosition, boolean isExpanded,
                              View convertView, ViewGroup parent) {
-        // получаем родительский элемент
         String listTitle = (String) getGroup(listPosition);
         if (convertView == null) {
             LayoutInflater mInflater = (LayoutInflater) context.
                     getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = mInflater.inflate(R.layout.list_group, null);
+            convertView = mInflater.inflate(R.layout.item_country, null);
         }
         TextView listTitleTextView = (TextView) convertView
                 .findViewById(R.id.listTitle);
@@ -107,7 +105,6 @@ public class ListAdapter extends BaseExpandableListAdapter {
             Map<String, List<String>> expListDetail){
         this.expListTitle = expListTitle;
         this.expListDetail = expListDetail;
-
         notifyDataSetChanged();
     }
 }

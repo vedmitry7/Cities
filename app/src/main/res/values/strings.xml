@@ -2,4 +2,6 @@
     <string name="app_name">Cities</string>
     <string name="loading">loadind...</string>
     <string name="no_information_on_wiki">No information on wiki</string>
+    <string name="error">Error</string>
+    <string name="something_went_wrong">Something went wrong</string>
 </resources>

@@ -1,4 +1,4 @@
-package com.vedmitryapps.cities;
+package com.vedmitryapps.cities.database;
 
 import android.content.ContentValues;
 import android.content.Context;

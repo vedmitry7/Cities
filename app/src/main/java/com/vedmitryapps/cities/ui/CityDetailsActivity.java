@@ -1,86 +1,95 @@
 package com.vedmitryapps.cities.ui;
 
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.vedmitryapps.cities.CityInfoLoader;
 import com.vedmitryapps.cities.R;
-import com.vedmitryapps.cities.api.GeonamesService;
 import com.vedmitryapps.cities.model.GeoList;
 import com.vedmitryapps.cities.model.Geoname;
+import com.vedmitryapps.cities.ui.dialog.LoadingDialog;
+import com.vedmitryapps.cities.ui.dialog.LoadingView;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import static com.vedmitryapps.cities.App.CITY_NAME;
+import static com.vedmitryapps.cities.App.DOWNLOAD_ID;
+import static com.vedmitryapps.cities.R.id.cityName;
 
 public class CityDetailsActivity extends AppCompatActivity {
 
-    TextView cityName;
-    TextView summary;
-    TextView wikiUrl;
+    private TextView mCityName;
+    private TextView mSummary;
+    private TextView mWikiUrl;
+    private LoadingView mLoadingView;
+    private String mTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_city_details);
 
-        cityName = (TextView) findViewById(R.id.cityName);
-        summary = (TextView) findViewById(R.id.summary);
-        wikiUrl = (TextView) findViewById(R.id.wikiUrl);
+        initView();
+        mTitle = getIntent().getStringExtra(CITY_NAME);
 
-        final String title = getIntent().getStringExtra("cityName");
+        LoaderCityCallback callback = new LoaderCityCallback(mTitle);
+        getSupportLoaderManager().initLoader(DOWNLOAD_ID, Bundle.EMPTY, callback);
 
-        Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl("http://api.geonames.org/")
-                .addConverterFactory(GsonConverterFactory.create());
+    }
+    private void initView() {
+        mCityName = (TextView) findViewById(cityName);
+        mSummary = (TextView) findViewById(R.id.summary);
+        mWikiUrl = (TextView) findViewById(R.id.wikiUrl);
+        mLoadingView = LoadingDialog.view(getSupportFragmentManager());
+        mLoadingView.showLoadingIndicator();
+    }
 
-        Retrofit retrofit = builder.build();
 
-        GeonamesService client = retrofit.create(GeonamesService.class);
+    private class LoaderCityCallback implements LoaderManager.LoaderCallbacks<GeoList> {
 
-        client.getPlace("vedmitry", title).enqueue(new Callback<GeoList>() {
-            @Override
-            public void onResponse(Call<GeoList> call, Response<GeoList> response) {
-                if(response.body().getGeonames().size()==0){
-                    cityName.setText(title);
-                    summary.setText(R.string.no_information_on_wiki);
+        String cityName;
+
+        public LoaderCityCallback(String cityName) {
+            this.cityName = cityName;
+        }
+
+        @Override
+        public Loader<GeoList> onCreateLoader(int id, Bundle args) {
+            if (id == DOWNLOAD_ID){
+                return new CityInfoLoader(getApplicationContext(), cityName);
+            }
+            return null;
+        }
+
+        @Override
+        public void onLoadFinished(Loader<GeoList> loader, GeoList data) {
+            if(data==null){
+                Toast.makeText(getApplicationContext(), R.string.error,Toast.LENGTH_SHORT).show();
+                mCityName.setText(mTitle);
+                mSummary.setText(R.string.error);
+                mLoadingView.hideLoadingIndicator();
+                return;
+            }
+
+            if (loader.getId() == DOWNLOAD_ID) {
+                if (data.getGeonames().size() == 0) {
+                    mCityName.setText(mTitle);
+                    mSummary.setText(R.string.no_information_on_wiki);
+                    mLoadingView.hideLoadingIndicator();
                     return;
                 }
-                Geoname geoname = response.body().getGeonames().get(0);
-                System.out.println("qqqq " + call.toString());
-                System.out.println("qqqq " + geoname.getTitle());
-                System.out.println("qqqq " + geoname.getSummary());
-                System.out.println("qqqq " + geoname.getFeature());
-                System.out.println("qqqq " + geoname.getLang());
-                System.out.println("qqqq " + geoname.getElevation());
-                System.out.println("qqqq " + geoname.getGeoNameId());
-                System.out.println("qqqq " + geoname.getCountryCode());
-                System.out.println("qqqq " + geoname.getRank());
-                System.out.println("qqqq " + geoname.getThumbnailImg());
-                System.out.println("qqqq " + geoname.getWikipediaUrl());
-                System.out.println("qqqq " + geoname.getTitle());
-
-                cityName.setText(geoname.getTitle()+"");
-                summary.setText(geoname.getSummary());
-                wikiUrl.setText("https://" + geoname.getWikipediaUrl());
-
+                Geoname geoname = data.getGeonames().get(0);
+                mCityName.setText(geoname.getTitle() + "");
+                mSummary.setText(geoname.getSummary());
+                mWikiUrl.setText("https://" + geoname.getWikipediaUrl());
+                mLoadingView.hideLoadingIndicator();
             }
+        }
 
-            @Override
-            public void onFailure(Call<GeoList> call, Throwable t) {
-                System.out.println("qqqq " + call.request().toString());
-                System.out.println("qqqq " + call.toString());
-                System.out.println("qqqq " + t.getLocalizedMessage());
-                System.out.println("qqqq " + t.getMessage());
-                System.out.println("qqqq " + t.getCause());
-                System.out.println("qqqq " + t);
-
-
-                Toast.makeText(CityDetailsActivity.this, "error2", Toast.LENGTH_SHORT).show();
-            }
-        });
+        @Override
+        public void onLoaderReset(Loader<GeoList> loader) {
+        }
     }
 }

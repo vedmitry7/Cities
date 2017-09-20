@@ -7,50 +7,51 @@ import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.ExpandableListView;
 import android.widget.Toast;
 
+import com.vedmitryapps.cities.App;
 import com.vedmitryapps.cities.CountryLoader;
-import com.vedmitryapps.cities.DBHelper;
 import com.vedmitryapps.cities.R;
+import com.vedmitryapps.cities.database.DBHelper;
 import com.vedmitryapps.cities.ui.adapter.ListAdapter;
 import com.vedmitryapps.cities.ui.dialog.LoadingDialog;
 import com.vedmitryapps.cities.ui.dialog.LoadingView;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.vedmitryapps.cities.App.APP_PREFERENCES;
+import static com.vedmitryapps.cities.App.DB_IS_FILLED;
+import static com.vedmitryapps.cities.App.DOWNLOAD_ID;
+
 public class MainActivity extends AppCompatActivity {
 
-    private static final String APP_PREFERENCES = "prefs";
-    ExpandableListView expListView;
-    ListAdapter expListAdapter;
-    List<String> expListTitle = new ArrayList<>();
-    Map<String, List<String>> expListDetail = new HashMap<>();
-    LoadingView mLoadingView;
-    public static final int downloadId = 234567;
-
-    SharedPreferences sharedPreferences;
+    private ExpandableListView expListView;
+    private ListAdapter expListAdapter;
+    private List<String> expListTitle = new ArrayList<>();
+    private Map<String, List<String>> expListDetail = new HashMap<>();
+    private LoadingView mLoadingView;
+    private SharedPreferences mSharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_better);
-        sharedPreferences = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+        setContentView(R.layout.activity_main);
+        mSharedPreferences = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
         initView();
 
-        if(sharedPreferences.getBoolean("downloaded", false)){
-            Log.i("TAG22rt", "downloaded - true");
+        if(mSharedPreferences.getBoolean(DB_IS_FILLED, false)){
             showList();
         } else {
-            Log.i("TAG22rt", "downloaded - false");
             mLoadingView.showLoadingIndicator();
-            LoaderCountriesCallbacks callback = new LoaderCountriesCallbacks();
-            getSupportLoaderManager().initLoader(downloadId, Bundle.EMPTY, callback);
+            LoaderCountriesCallback callback = new LoaderCountriesCallback();
+            getSupportLoaderManager().initLoader(DOWNLOAD_ID, Bundle.EMPTY, callback);
         }
     }
 
@@ -58,7 +59,14 @@ public class MainActivity extends AppCompatActivity {
         DBHelper dbHelper = new DBHelper(this);
         expListDetail = dbHelper.getDate();
         expListTitle = new ArrayList<>(expListDetail.keySet());
-        showList(expListTitle, expListDetail);
+        Collections.sort(expListTitle, new Comparator<String>() {
+            @Override
+            public int compare(String s, String t1) {
+                return s.compareTo(t1);
+            }
+        });
+        expListAdapter.update(expListTitle, expListDetail);
+        mLoadingView.hideLoadingIndicator();
     }
 
     private void initView() {
@@ -71,14 +79,9 @@ public class MainActivity extends AppCompatActivity {
                                         int groupPosition, int childPosition, long id) {
 
                 Intent intent = new Intent(getApplicationContext(), CityDetailsActivity.class);
-                intent.putExtra("cityName", expListDetail.get(expListTitle.get(groupPosition))
+                intent.putExtra(App.CITY_NAME, expListDetail.get(expListTitle.get(groupPosition))
                         .get(childPosition));
                 startActivity(intent);
-
-                Toast.makeText(getApplicationContext(),
-                        expListTitle.get(groupPosition)
-                                + " : " + expListDetail.get(expListTitle.get(groupPosition))
-                                .get(childPosition), Toast.LENGTH_SHORT).show();
                 return false;
             }
         });
@@ -87,11 +90,11 @@ public class MainActivity extends AppCompatActivity {
         mLoadingView.showLoadingIndicator();
     }
 
-    private class LoaderCountriesCallbacks implements LoaderManager.LoaderCallbacks<Map<String, List<String>>>{
+    private class LoaderCountriesCallback implements LoaderManager.LoaderCallbacks<Map<String, List<String>>>{
 
         @Override
         public Loader<Map<String, List<String>>> onCreateLoader(int id, Bundle args) {
-            if (id == downloadId){
+            if (id == DOWNLOAD_ID){
                 return new CountryLoader(getApplicationContext());
             }
             return null;
@@ -99,9 +102,16 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onLoadFinished(Loader<Map<String, List<String>>> loader, Map<String, List<String>> data) {
-            if(loader.getId() == downloadId){
+
+            if(data==null){
+                Toast.makeText(getApplicationContext(), R.string.something_went_wrong, Toast.LENGTH_LONG).show();
+                mLoadingView.hideLoadingIndicator();
+                return;
+            }
+
+            if(loader.getId() == DOWNLOAD_ID){
                 saveToDB(data);
-                sharedPreferences.edit().putBoolean("downloaded", true).commit();
+                mSharedPreferences.edit().putBoolean(App.DB_IS_FILLED, true).commit();
                 showList();
                 mLoadingView.hideLoadingIndicator();
             }
@@ -111,13 +121,6 @@ public class MainActivity extends AppCompatActivity {
         public void onLoaderReset(Loader<Map<String, List<String>>> loader) {
         }
     }
-
-    public void showList(List<String> listTitle, Map listCities) {
-        expListAdapter.update(listTitle, listCities);
-        mLoadingView.hideLoadingIndicator();
-    }
-
-
 
     private void saveToDB(Map<String, List<String>> map){
         DBHelper dbHelper = new DBHelper(this);

@@ -1,6 +1,5 @@
 package com.vedmitryapps.cities.api;
 
-
 import com.vedmitryapps.cities.model.GeoList;
 
 import retrofit2.Call;
