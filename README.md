@@ -1,5 +1,5 @@
-# Cities
-## Task:
+### Cities
+#### Task:
 1. Download a list of countries and cities from https://raw.githubusercontent.com/David-Haim/CountriesToCitiesJSON/master/countriesToCities.json
 2. Parse that list into a local database.
 3. Create a country selector (dropdown or picker) which is populated from the local database.
